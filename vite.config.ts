@@ -11,17 +11,15 @@ dotenv.config({ path: '.env.local' });
 dotenv.config({ path: '.env' });
 dotenv.config();
 
-// Hoist plugin definition to top (fixes undefined error)
+// Define plugin at top (fixes undefined)
 function chrome129IssuePlugin() {
   return {
     name: 'chrome129IssuePlugin',
     configureServer(server: ViteDevServer) {
       server.middlewares.use((req, res, next) => {
         const raw = req.headers['user-agent']?.match(/Chrom(e|ium)\/([0-9]+)\./);
-
         if (raw) {
           const version = parseInt(raw[2], 10);
-
           if (version === 129) {
             res.setHeader('content-type', 'text/html');
             res.end(
@@ -30,7 +28,6 @@ function chrome129IssuePlugin() {
             return;
           }
         }
-
         next();
       });
     },
@@ -42,20 +39,19 @@ export default defineConfig((config) => {
     define: {
       'process.env.NODE_ENV': JSON.stringify(process.env.NODE_ENV),
     },
-    // Single merged build config (no duplicates)
+    // Single build config (merged, no duplicates)
     build: {
       target: 'esnext',
       rollupOptions: {
         output: {
           manualChunks: {
-            // Group deps to fix conflicts/chunk warnings
             vendor_ai: ['ai', '@ai-sdk/openai', '@ai-sdk/anthropic'],
             vendor_git: ['isomorphic-git'],
           },
         },
       },
       ssr: {
-        noExternal: [/^@remix-run\/.*/, /^ai\/.*/, 'isomorphic-git'],  // Bundle server deps
+        noExternal: [/^@remix-run\/.*/, /^ai\/.*/, 'isomorphic-git'],
       },
     },
     plugins: [
@@ -68,7 +64,6 @@ export default defineConfig((config) => {
           crypto: true,
         },
         protocolImports: true,
-        // Exclude in prod to avoid client bloat
         exclude: config.mode === 'production' ? ['child_process', 'fs', 'path'] : [],
       }),
       {
@@ -90,15 +85,14 @@ export default defineConfig((config) => {
           v3_relativeSplatPath: true,
           v3_throwAbortReason: true,
           v3_lazyRouteDiscovery: true,
-          v3_singleFetch: true,  // Fixes fetch warning
+          v3_singleFetch: true,
         },
       }),
       UnoCSS(),
       tsconfigPaths(),
-      chrome129IssuePlugin(),  // Now defined above
+      chrome129IssuePlugin(),
       config.mode === 'production' && optimizeCssModules({ apply: 'build' }),
     ],
-    // Fix path externalization
     resolve: {
       alias: {
         path: 'path-browserify',
