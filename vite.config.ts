@@ -11,7 +11,7 @@ dotenv.config({ path: '.env.local' });
 dotenv.config({ path: '.env' });
 dotenv.config();
 
-// Plugin defined here (hoisted, fixes undefined)
+// Hoisted plugin (fixes undefined error)
 function chrome129IssuePlugin() {
   return {
     name: 'chrome129IssuePlugin',
@@ -37,7 +37,7 @@ export default defineConfig((config) => {
     define: {
       'process.env.NODE_ENV': JSON.stringify(process.env.NODE_ENV),
     },
-    // Single merged build (no duplicates)
+    // Single build config (no duplicates)
     build: {
       target: 'esnext',
       rollupOptions: {
