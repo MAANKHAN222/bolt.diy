@@ -1,0 +1,6 @@
+name = "bolt-diy"  # Replace with your project name if different
+main = "build/server/index.js"
+compatibility_flags = ["nodejs_compat"]  # Enables crypto, fs, child_process, etc.
+
+[build]
+command = "pnpm build"  # Matches your current build script
