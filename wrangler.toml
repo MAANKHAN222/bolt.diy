@@ -1,6 +1,7 @@
-name = "bolt-diy"  # Replace with your project name if different
+name = "bolt-diy"  # Your Pages project name
 main = "build/server/index.js"
-compatibility_flags = ["nodejs_compat"]  # Enables crypto, fs, child_process, etc.
+compatibility_flags = ["nodejs_compat"]  # Handles crypto/fs/child_process
 
 [build]
-command = "pnpm build"  # Matches your current build script
+command = "pnpm build"
+pages_build_output_dir = "build/client"  # Points to Remix client output
