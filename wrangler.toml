@@ -1,7 +1,7 @@
-name = "bolt-diy"  # Your Pages project name
+name = "bolt-diy"  # Match your Pages project name
 main = "build/server/index.js"
-compatibility_flags = ["nodejs_compat"]  # Handles crypto/fs/child_process
+compatibility_flags = ["nodejs_compat"]  # Polyfills crypto/fs/child_process
 
 [build]
 command = "pnpm build"
-pages_build_output_dir = "build/client"  # Points to Remix client output
+pages_build_output_dir = "build/client"  # Required for Pages; points to Remix assets
