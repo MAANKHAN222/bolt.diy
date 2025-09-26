@@ -6,12 +6,12 @@ import { optimizeCssModules } from 'vite-plugin-optimize-css-modules';
 import tsconfigPaths from 'vite-tsconfig-paths';
 import * as dotenv from 'dotenv';
 
-// Load environment variables from multiple files
+// Load environment variables
 dotenv.config({ path: '.env.local' });
 dotenv.config({ path: '.env' });
 dotenv.config();
 
-// Define plugin at top (fixes undefined)
+// Plugin defined here (hoisted, fixes undefined)
 function chrome129IssuePlugin() {
   return {
     name: 'chrome129IssuePlugin',
@@ -22,9 +22,7 @@ function chrome129IssuePlugin() {
           const version = parseInt(raw[2], 10);
           if (version === 129) {
             res.setHeader('content-type', 'text/html');
-            res.end(
-              '<body><h1>Please use Chrome Canary for testing.</h1><p>Chrome 129 has an issue with JavaScript modules & Vite local development, see <a href="https://github.com/stackblitz/bolt.new/issues/86#issuecomment-2395519258">for more information.</a></p><p><b>Note:</b> This only impacts <u>local development</u>. `pnpm run build` and `pnpm run start` will work fine in this browser.</p></body>'
-            );
+            res.end('<body><h1>Please use Chrome Canary for testing.</h1><p>Chrome 129 has an issue with JavaScript modules & Vite local development, see <a href="https://github.com/stackblitz/bolt.new/issues/86#issuecomment-2395519258">for more information.</a></p><p><b>Note:</b> This only impacts <u>local development</u>. `pnpm run build` and `pnpm run start` will work fine in this browser.</p></body>');
             return;
           }
         }
@@ -39,7 +37,7 @@ export default defineConfig((config) => {
     define: {
       'process.env.NODE_ENV': JSON.stringify(process.env.NODE_ENV),
     },
-    // Single build config (merged, no duplicates)
+    // Single merged build (no duplicates)
     build: {
       target: 'esnext',
       rollupOptions: {
