@@ -11,6 +11,7 @@ dotenv.config({ path: '.env.local' });
 dotenv.config({ path: '.env' });
 dotenv.config();
 
+// Hoist plugin definition to top (fixes undefined error)
 function chrome129IssuePlugin() {
   return {
     name: 'chrome129IssuePlugin',
@@ -24,9 +25,8 @@ function chrome129IssuePlugin() {
           if (version === 129) {
             res.setHeader('content-type', 'text/html');
             res.end(
-              '<body><h1>Please use Chrome Canary for testing.</h1><p>Chrome 129 has an issue with JavaScript modules & Vite local development, see <a href="https://github.com/stackblitz/bolt.new/issues/86#issuecomment-2395519258">for more information.</a></p><p><b>Note:</b> This only impacts <u>local development</u>. `pnpm run build` and `pnpm run start` will work fine in this browser.</p></body>',
+              '<body><h1>Please use Chrome Canary for testing.</h1><p>Chrome 129 has an issue with JavaScript modules & Vite local development, see <a href="https://github.com/stackblitz/bolt.new/issues/86#issuecomment-2395519258">for more information.</a></p><p><b>Note:</b> This only impacts <u>local development</u>. `pnpm run build` and `pnpm run start` will work fine in this browser.</p></body>'
             );
-
             return;
           }
         }
@@ -42,25 +42,25 @@ export default defineConfig((config) => {
     define: {
       'process.env.NODE_ENV': JSON.stringify(process.env.NODE_ENV),
     },
-    // Merged build config (no duplicates)
+    // Single merged build config (no duplicates)
     build: {
       target: 'esnext',
       rollupOptions: {
         output: {
           manualChunks: {
-            // Group large deps to fix import conflicts and chunk warnings
+            // Group deps to fix conflicts/chunk warnings
             vendor_ai: ['ai', '@ai-sdk/openai', '@ai-sdk/anthropic'],
             vendor_git: ['isomorphic-git'],
           },
         },
       },
       ssr: {
-        noExternal: [/^@remix-run\/.*/, /^ai\/.*/, 'isomorphic-git'],  // Keep server deps bundled
+        noExternal: [/^@remix-run\/.*/, /^ai\/.*/, 'isomorphic-git'],  // Bundle server deps
       },
     },
     plugins: [
       nodePolyfills({
-        include: ['buffer', 'process', 'util', 'stream', 'crypto'],  // Include crypto for dev
+        include: ['buffer', 'process', 'util', 'stream', 'crypto'],
         globals: {
           Buffer: true,
           process: true,
@@ -68,7 +68,7 @@ export default defineConfig((config) => {
           crypto: true,
         },
         protocolImports: true,
-        // Exclude fs/child_process in prod to avoid client bloat
+        // Exclude in prod to avoid client bloat
         exclude: config.mode === 'production' ? ['child_process', 'fs', 'path'] : [],
       }),
       {
@@ -90,15 +90,15 @@ export default defineConfig((config) => {
           v3_relativeSplatPath: true,
           v3_throwAbortReason: true,
           v3_lazyRouteDiscovery: true,
-          v3_singleFetch: true,  // Suppresses v7 fetch warning
+          v3_singleFetch: true,  // Fixes fetch warning
         },
       }),
       UnoCSS(),
       tsconfigPaths(),
-      chrome129IssuePlugin(),  // Now in scope
+      chrome129IssuePlugin(),  // Now defined above
       config.mode === 'production' && optimizeCssModules({ apply: 'build' }),
     ],
-    // Resolve path externalization
+    // Fix path externalization
     resolve: {
       alias: {
         path: 'path-browserify',
@@ -126,7 +126,7 @@ export default defineConfig((config) => {
         '**/cypress/**',
         '**/.{idea,git,cache,output,temp}/**',
         '**/{karma,rollup,webpack,vite,vitest,jest,ava,babel,nyc,cypress,tsup,build}.config.*',
-        '**/tests/preview/**', // Exclude preview tests that require Playwright
+        '**/tests/preview/**',
       ],
     },
   };
