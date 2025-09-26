@@ -11,30 +11,64 @@ dotenv.config({ path: '.env.local' });
 dotenv.config({ path: '.env' });
 dotenv.config();
 
+function chrome129IssuePlugin() {
+  return {
+    name: 'chrome129IssuePlugin',
+    configureServer(server: ViteDevServer) {
+      server.middlewares.use((req, res, next) => {
+        const raw = req.headers['user-agent']?.match(/Chrom(e|ium)\/([0-9]+)\./);
+
+        if (raw) {
+          const version = parseInt(raw[2], 10);
+
+          if (version === 129) {
+            res.setHeader('content-type', 'text/html');
+            res.end(
+              '<body><h1>Please use Chrome Canary for testing.</h1><p>Chrome 129 has an issue with JavaScript modules & Vite local development, see <a href="https://github.com/stackblitz/bolt.new/issues/86#issuecomment-2395519258">for more information.</a></p><p><b>Note:</b> This only impacts <u>local development</u>. `pnpm run build` and `pnpm run start` will work fine in this browser.</p></body>',
+            );
+
+            return;
+          }
+        }
+
+        next();
+      });
+    },
+  };
+}
+
 export default defineConfig((config) => {
   return {
     define: {
       'process.env.NODE_ENV': JSON.stringify(process.env.NODE_ENV),
     },
+    // Merged build config (no duplicates)
     build: {
       target: 'esnext',
-      // Add SSR-specific rollup options to reduce warnings (e.g., empty chunks from Remix routes)
+      rollupOptions: {
+        output: {
+          manualChunks: {
+            // Group large deps to fix import conflicts and chunk warnings
+            vendor_ai: ['ai', '@ai-sdk/openai', '@ai-sdk/anthropic'],
+            vendor_git: ['isomorphic-git'],
+          },
+        },
+      },
       ssr: {
         noExternal: [/^@remix-run\/.*/, /^ai\/.*/, 'isomorphic-git'],  // Keep server deps bundled
       },
     },
     plugins: [
       nodePolyfills({
-        include: ['buffer', 'process', 'util', 'stream', 'crypto'],  // Add crypto for dev
+        include: ['buffer', 'process', 'util', 'stream', 'crypto'],  // Include crypto for dev
         globals: {
           Buffer: true,
           process: true,
           global: true,
-          // Add these for server-side compat in dev (won't bloat client)
           crypto: true,
         },
         protocolImports: true,
-        // Remove exclusions for fs/child_process in dev; Wrangler handles prod
+        // Exclude fs/child_process in prod to avoid client bloat
         exclude: config.mode === 'production' ? ['child_process', 'fs', 'path'] : [],
       }),
       {
@@ -56,25 +90,18 @@ export default defineConfig((config) => {
           v3_relativeSplatPath: true,
           v3_throwAbortReason: true,
           v3_lazyRouteDiscovery: true,
-          // Add this to suppress single-fetch warning
-          v3_singleFetch: true,
+          v3_singleFetch: true,  // Suppresses v7 fetch warning
         },
       }),
       UnoCSS(),
       tsconfigPaths(),
-      chrome129IssuePlugin(),
+      chrome129IssuePlugin(),  // Now in scope
       config.mode === 'production' && optimizeCssModules({ apply: 'build' }),
     ],
-    // Suppress dynamic/static import warnings by code-splitting
-    build: {
-      rollupOptions: {
-        output: {
-          manualChunks: {
-            // Group large deps (e.g., AI SDK) to avoid conflicts
-            vendor_ai: ['ai', '@ai-sdk/openai', '@ai-sdk/anthropic'],
-            vendor_git: ['isomorphic-git'],
-          },
-        },
+    // Resolve path externalization
+    resolve: {
+      alias: {
+        path: 'path-browserify',
       },
     },
     envPrefix: [
@@ -102,13 +129,5 @@ export default defineConfig((config) => {
         '**/tests/preview/**', // Exclude preview tests that require Playwright
       ],
     },
-    // Resolve path externalization warning
-    resolve: {
-      alias: {
-        path: 'path-browserify',  // Ensure browser-friendly path
-      },
-    },
   };
 });
-
-// ... (chrome129IssuePlugin unchanged)
